@@ -1,24 +1,51 @@
-var sqlite3 = require("sqlite3").verbose();
-var express = require("express");
-var http = require("http");
-var path = require("path");
-var bodyParser = require("body-parser");
-var helmet = require("helmet");
-var rateLimit = require("express-rate-limit");
-var app = express();
-var server = http.createServer(app);
+var express=require("express"); 
+var bodyParser=require("body-parser"); 
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
-});
+const mongoose = require('mongoose'); 
+mongoose.connect('mongodb://localhost:27017/gfg'); 
+var db=mongoose.connection; 
+db.on('error', console.log.bind(console, "connection error")); 
+db.once('open', function(callback){ 
+	console.log("connection succeeded"); 
+}) 
 
-var db = new sqlite3.Database("./database/employees.db");
+var app=express() 
 
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(express.static(path.join(__dirname, "./public")));
-app.use(helmet());
-app.use(limiter);
-app.get("/", function(req, res) {
-  res.sendFile(path.join(__dirname, "./public/form.html"));
-});
+
+app.use(bodyParser.json()); 
+app.use(express.static('public')); 
+app.use(bodyParser.urlencoded({ 
+	extended: true
+})); 
+
+app.post('/sign_up', function(req,res){ 
+	var name = req.body.name; 
+	var email =req.body.email; 
+	var pass = req.body.password; 
+	var phone =req.body.phone; 
+
+	var data = { 
+		"name": name, 
+		"email":email, 
+		"password":pass, 
+		"phone":phone 
+	} 
+db.collection('details').insertOne(data,function(err, collection){ 
+		if (err) throw err; 
+		console.log("Record inserted Successfully"); 
+			
+	}); 
+		
+	return res.redirect('signup_success.html'); 
+}) 
+
+
+app.get('/',function(req,res){ 
+res.set({ 
+	'Access-control-Allow-Origin': '*'
+	}); 
+return res.redirect('index.html'); 
+}).listen(3000) 
+
+
+console.log("server listening at port 3000"); 
